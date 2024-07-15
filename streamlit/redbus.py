@@ -12,6 +12,11 @@ st.title("GUVI-Redbus Data Scraping Project Demo")
 #Get the db connection details from secrets & cache the connection to avoid multiple connections
 @st.cache_resource
 def dbConnection():
+    """Establishes a database connection using cached credentials.
+    Caches the connection to avoid redundant connections.
+    Returns:
+        A pymysql connection object.
+    """
     con = pymysql.connect(host=st.secrets.db_credentials.host, 
             user=st.secrets.db_credentials.user,  
             password = st.secrets.db_credentials.password, 
@@ -22,22 +27,26 @@ def dbConnection():
 #Get distinct routes and cache the same. No need to fetch this everytime page (re)loads
 @st.cache_data
 def loadRoutes():
+    """Loads distinct route names from the db. Caches the output as the data doesn't change """
     df = pd.read_sql_query("select distinct(route_name) from bus_routes1 order by route_name",con=dbConnection())
     return df
 
 @st.cache_data
 # values for dept time filter
 def getDeptTimes():
+    """Values for Departure Time filter """
     return ["Before 6am","Before 6am - 12pm","Before 12pm - 6pm","After 6pm"]
 
 @st.cache_data
 #values for bus Types
 def getBusTypes():
+    """Values for Bus type filter"""
     return ["Seater","Sleeper","A/C","Non A/C"]
 
 @st.cache_data
 #values for ratings
 def getRatings():
+    """Values for Ratings filter"""
     return [":star::star::star::star:",":star::star::star:",":star::star:","Any"]
 
 #load unique routes to session state
@@ -77,6 +86,14 @@ with st.sidebar:
 
 # Load data for the selected filters and show the dataframe
 def refreshMainTable(pRouteName, pDeptTimes, pBusTypes, pRating):
+    """Fetches bus data based on selected filters and displays it in a Streamlit dataframe.
+
+    Args:
+        pRouteName: The selected route.
+        pDeptTimes: A list of booleans indicating selected departure time filters.
+        pBusTypes: A list of booleans indicating selected bus type filters.
+        pRating: The selected rating.
+    """
     try:
         deptQry = ["depart_time < '06:00'","(depart_time >= '06:00' and depart_time < '12:00')","(depart_time >= '12:00' and depart_time > '18:00')","(depart_time >= '18:00')"]
         seatQry = ["lower(bus_type) like '%seater%' ","lower(bus_type) like '%sleeper%'"]
@@ -137,5 +154,5 @@ def refreshMainTable(pRouteName, pDeptTimes, pBusTypes, pRating):
     except Exception as e:
         print('Error :', e)
 
-
+#Refresh data for the selected filters
 refreshMainTable(sbRoutes,deptTimes,busTypes,rdRatings)
